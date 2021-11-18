@@ -2,16 +2,16 @@
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.enet = {}));
-}(this, (function (exports) { 'use strict';
+})(this, (function (exports) { 'use strict';
 
     var DefaultNetEventHandler = (function () {
         function DefaultNetEventHandler() {
         }
         DefaultNetEventHandler.prototype.onStartConnenct = function (connectOpt) {
-            console.log("start connect:" + connectOpt.url + ",opt:", connectOpt);
+            console.log("start connect:".concat(connectOpt.url, ",opt:"), connectOpt);
         };
         DefaultNetEventHandler.prototype.onConnectEnd = function (connectOpt, handshakeRes) {
-            console.log("connect ok:" + connectOpt.url + ",opt:", connectOpt);
+            console.log("connect ok:".concat(connectOpt.url, ",opt:"), connectOpt);
             console.log("handshakeRes:", handshakeRes);
         };
         DefaultNetEventHandler.prototype.onError = function (event, connectOpt) {
@@ -23,26 +23,26 @@
             console.error(event);
         };
         DefaultNetEventHandler.prototype.onStartReconnect = function (reConnectCfg, connectOpt) {
-            console.log("start reconnect:" + connectOpt.url + ",opt:", connectOpt);
+            console.log("start reconnect:".concat(connectOpt.url, ",opt:"), connectOpt);
         };
         DefaultNetEventHandler.prototype.onReconnecting = function (curCount, reConnectCfg, connectOpt) {
-            console.log("url:" + connectOpt.url + " reconnect count:" + curCount + ",less count:" + reConnectCfg.reconnectCount + ",opt:", connectOpt);
+            console.log("url:".concat(connectOpt.url, " reconnect count:").concat(curCount, ",less count:").concat(reConnectCfg.reconnectCount, ",opt:"), connectOpt);
         };
         DefaultNetEventHandler.prototype.onReconnectEnd = function (isOk, reConnectCfg, connectOpt) {
-            console.log("url:" + connectOpt.url + "reconnect end " + (isOk ? "ok" : "fail") + " ,opt:", connectOpt);
+            console.log("url:".concat(connectOpt.url, "reconnect end ").concat(isOk ? "ok" : "fail", " ,opt:"), connectOpt);
         };
         DefaultNetEventHandler.prototype.onStartRequest = function (reqCfg, connectOpt) {
-            console.log("start request:" + reqCfg.protoKey + ",id:" + reqCfg.reqId + ",opt:", connectOpt);
+            console.log("start request:".concat(reqCfg.protoKey, ",id:").concat(reqCfg.reqId, ",opt:"), connectOpt);
             console.log("reqCfg:", reqCfg);
         };
         DefaultNetEventHandler.prototype.onData = function (dpkg, connectOpt) {
-            console.log("data :" + dpkg.key + ",opt:", connectOpt);
+            console.log("data :".concat(dpkg.key, ",opt:"), connectOpt);
         };
         DefaultNetEventHandler.prototype.onRequestTimeout = function (reqCfg, connectOpt) {
-            console.warn("request timeout:" + reqCfg.protoKey + ",opt:", connectOpt);
+            console.warn("request timeout:".concat(reqCfg.protoKey, ",opt:"), connectOpt);
         };
         DefaultNetEventHandler.prototype.onCustomError = function (dpkg, connectOpt) {
-            console.error("proto key:" + dpkg.key + ",reqId:" + dpkg.reqId + ",code:" + dpkg.code + ",errorMsg:" + dpkg.errorMsg + ",opt:", connectOpt);
+            console.error("proto key:".concat(dpkg.key, ",reqId:").concat(dpkg.reqId, ",code:").concat(dpkg.code, ",errorMsg:").concat(dpkg.errorMsg, ",opt:"), connectOpt);
         };
         DefaultNetEventHandler.prototype.onKick = function (dpkg, copt) {
             console.log("be kick,opt:", copt);
@@ -50,6 +50,7 @@
         return DefaultNetEventHandler;
     }());
 
+    exports.PackageType = void 0;
     (function (PackageType) {
         PackageType[PackageType["HANDSHAKE"] = 1] = "HANDSHAKE";
         PackageType[PackageType["HANDSHAKE_ACK"] = 2] = "HANDSHAKE_ACK";
@@ -58,6 +59,7 @@
         PackageType[PackageType["KICK"] = 5] = "KICK";
     })(exports.PackageType || (exports.PackageType = {}));
 
+    exports.SocketState = void 0;
     (function (SocketState) {
         SocketState[SocketState["CONNECTING"] = 0] = "CONNECTING";
         SocketState[SocketState["OPEN"] = 1] = "OPEN";
@@ -90,7 +92,7 @@
             var url = opt.url;
             if (!url) {
                 if (opt.host && opt.port) {
-                    url = (opt.protocol ? "wss" : "ws") + "://" + opt.host + ":" + opt.port;
+                    url = "".concat(opt.protocol ? "wss" : "ws", "://").concat(opt.host, ":").concat(opt.port);
                 }
                 else {
                     return false;
@@ -234,7 +236,7 @@
                 netEventHandler.onStartConnenct && netEventHandler.onStartConnenct(option);
             }
             else {
-                console.error("is not inited" + (socket ? " , socket state" + socket.state : ""));
+                console.error("is not inited".concat(socket ? " , socket state" + socket.state : ""));
             }
         };
         NetNode.prototype.disConnect = function () {
@@ -390,7 +392,8 @@
                 return;
             }
             if (this._heartbeatTimeoutId) {
-                return;
+                clearTimeout(this._heartbeatTimeoutId);
+                this._heartbeatTimeoutId = undefined;
             }
             this._heartbeatTimeId = setTimeout(function () {
                 _this._heartbeatTimeId = undefined;
@@ -402,7 +405,7 @@
         };
         NetNode.prototype._heartbeatTimeoutCb = function () {
             var gap = this._nextHeartbeatTimeoutTime - Date.now();
-            if (gap > this._reConnectCfg) {
+            if (gap > this._gapThreashold) {
                 this._heartbeatTimeoutId = setTimeout(this._heartbeatTimeoutCb.bind(this), gap);
             }
             else {
@@ -453,7 +456,7 @@
                 return true;
             }
             else {
-                console.error("" + (this._inited
+                console.error("".concat(this._inited
                     ? socketIsReady
                         ? "socket is ready"
                         : "socket is null or unready"
@@ -494,7 +497,7 @@
                 pkgTypeHandler(depackage);
             }
             else {
-                console.error("There is no handler of this type:" + depackage.type);
+                console.error("There is no handler of this type:".concat(depackage.type));
             }
             if (depackage.errorMsg) {
                 netEventHandler.onCustomError && netEventHandler.onCustomError(depackage, this._connectOpt);
@@ -591,7 +594,7 @@
 
     Object.defineProperty(exports, '__esModule', { value: true });
 
-})));
+}));
 
     var globalTarget =window?window:global;
     globalTarget.enet?Object.assign({},globalTarget.enet):(globalTarget.enet = enet)
