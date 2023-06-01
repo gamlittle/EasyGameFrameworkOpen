@@ -118,7 +118,7 @@ export class Protobuf {
                 //Encode length
                 const valueByteLen = Protobuf.byteLength(value);
                 //Write String
-                buffer.writeBytes(Protobuf.encodeProtobuf(valueByteLen));
+                buffer.writeBytes(Protobuf.encodeUInt32(valueByteLen));
                 buffer.writeUTFBytes(value);
                 break;
             case 'bool':
@@ -265,7 +265,7 @@ export class Protobuf {
     }
     static byteLength(str) {
         if (typeof str !== "string") {
-            return -1;
+            return 0;
         }
 
         var length = 0;
