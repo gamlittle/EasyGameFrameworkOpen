@@ -346,7 +346,8 @@ export class NetNode<ProtoKeyType> implements enet.INode<ProtoKeyType> {
             return;
         }
         if (this._heartbeatTimeoutId) {
-            return;
+            clearTimeout(this._heartbeatTimeoutId);
+            this._heartbeatTimeoutId = undefined;
         }
         this._heartbeatTimeId = setTimeout(() => {
             this._heartbeatTimeId = undefined;
