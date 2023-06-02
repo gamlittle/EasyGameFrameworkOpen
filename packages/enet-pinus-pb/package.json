@@ -38,13 +38,14 @@
     "build:iife": "egf build -f iife -m",
     "build:system": "egf build -f system -m",
     "clean-dist": "rimraf dist",
-    "build:all": "yarn run clean-dist && npm run build:cjs&&npm run build:es&&npm run build:umd&&npm run build:iife&&npm run build:system"
+    "build:all": "npm run clean-dist && npm run build:cjs&&npm run build:es&&npm run build:umd&&npm run build:iife&&npm run build:system"
   },
   "bugs": {
     "url": "https://github.com/AILHC/EasyGameFrameworkOpen/issues"
   },
   "homepage": "https://github.com/AILHC/EasyGameFrameworkOpen/tree/main/packages/enet-pinus-pb#readme",
   "devDependencies": {
-    "@ailhc/enet": "^1.2.7"
+    "@ailhc/enet": "^1.2.7",
+    "ts-node": "^10.9.1"
   }
 }

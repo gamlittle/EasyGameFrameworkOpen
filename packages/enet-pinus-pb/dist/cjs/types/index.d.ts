@@ -835,3 +835,7 @@ declare module '@ailhc/enet-pinus-pb' {
 	export * from '@ailhc/enet-pinus-pb';
 
 }
+declare module '@ailhc/enet-pinus-pb' {
+	export {};
+
+}

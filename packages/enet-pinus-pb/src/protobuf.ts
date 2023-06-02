@@ -8,7 +8,8 @@ export class Protobuf {
         double: 1,
         string: 2,
         message: 2,
-        float: 5
+        float: 5,
+        bool: 0
     };
     private static _clients: any = {};
     private static _servers: any = {};
@@ -120,6 +121,10 @@ export class Protobuf {
                 buffer.writeBytes(this.encodeUInt32(valueByteLen));
                 buffer.writeUTFBytes(value);
                 break;
+            case 'bool':
+                const intValue = value ? 1 : 0;
+                buffer.writeBytes(this.encodeUInt32(intValue));
+                break;
             default:
                 let proto: any = protos.__messages[type] || this._clients["message " + type];
                 if (!!proto) {
@@ -142,7 +147,7 @@ export class Protobuf {
                 let floats: ByteArray = new ByteArray();
                 buffer.readBytes(floats, 0, 4);
                 floats.endian = Endian.LITTLE_ENDIAN;
-                let float: number = buffer.readFloat();
+                // let float: number = buffer.readFloat();
                 return floats.readFloat();
             case "double":
                 let doubles: ByteArray = new ByteArray();
@@ -152,9 +157,13 @@ export class Protobuf {
             case "string":
                 let length: number = this.decodeUInt32(buffer);
                 return buffer.readUTFBytes(length);
+            case 'bool':
+                const value = this.decodeUInt32(buffer);
+                const boolValue = value ? true : false;
+                return boolValue;
             default:
                 let proto: any = protos && (protos.__messages[type] || this._servers["message " + type]);
-                if (proto) {
+                if (!!proto) {
                     let len: number = this.decodeUInt32(buffer);
                     let buf: ByteArray;
                     if (len) {
@@ -176,32 +185,37 @@ export class Protobuf {
             type === "uInt64" ||
             type === "sInt64" ||
             type === "float" ||
-            type === "double"
+            type === "double" ||
+            type === "bool"
         );
     }
     static encodeArray(array: Array<any>, proto: any, protos: any, buffer: ByteArray): void {
         let isSimpleType = this.isSimpleType;
+        let encodeTag = this.encodeTag;
+        let encodeUInt32 = this.encodeUInt32;
         if (isSimpleType(proto.type)) {
-            buffer.writeBytes(this.encodeTag(proto.type, proto.tag));
-            buffer.writeBytes(this.encodeUInt32(array.length));
+            buffer.writeBytes(encodeTag(proto.type, proto.tag));
+            buffer.writeBytes(encodeUInt32(array.length));
             let encodeProp = this.encodeProp;
             for (let i: number = 0; i < array.length; i++) {
                 encodeProp(array[i], proto.type, protos, buffer);
             }
         } else {
             let encodeTag = this.encodeTag;
+            let encodeProp = this.encodeProp;
             for (let j: number = 0; j < array.length; j++) {
                 buffer.writeBytes(encodeTag(proto.type, proto.tag));
-                this.encodeProp(array[j], proto.type, protos, buffer);
+                encodeProp(array[j], proto.type, protos, buffer);
             }
         }
     }
     static decodeArray(array: Array<any>, type: string, protos: any, buffer: ByteArray): void {
         let isSimpleType = this.isSimpleType;
         let decodeProp = this.decodeProp;
+        let decodeUInt32 = this.decodeUInt32;
 
         if (isSimpleType(type)) {
-            let length: number = this.decodeUInt32(buffer);
+            let length: number = decodeUInt32(buffer);
             for (let i: number = 0; i < length; i++) {
                 array.push(decodeProp(type, protos, buffer));
             }
@@ -255,7 +269,7 @@ export class Protobuf {
     }
     static byteLength(str) {
         if (typeof str !== "string") {
-            return -1;
+            return 0;
         }
 
         var length = 0;
