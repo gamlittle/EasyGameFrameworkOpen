@@ -15,24 +15,24 @@ export class Protobuf {
     private static _servers: any = {};
 
     static init(protos: any): void {
-        Protobuf._clients = (protos && protos.client) || {};
-        Protobuf._servers = (protos && protos.server) || {};
+        this._clients = (protos && protos.client) || {};
+        this._servers = (protos && protos.server) || {};
     }
 
     static encode(route: string, msg: any): ByteArray {
-        let protos: any = Protobuf._clients[route];
+        let protos: any = this._clients[route];
 
         if (!protos) return null;
 
-        return Protobuf.encodeProtos(protos, msg);
+        return this.encodeProtos(protos, msg);
     }
 
     static decode(route: string, buffer: ByteArray): any {
-        let protos: any = Protobuf._servers[route];
+        let protos: any = this._servers[route];
 
         if (!protos) return null;
 
-        return Protobuf.decodeProtos(protos, buffer);
+        return this.decodeProtos(protos, buffer);
     }
     private static encodeProtos(protos: any, msg: any): ByteArray {
         let buffer: ByteArray = new ByteArray();
@@ -44,12 +44,12 @@ export class Protobuf {
                 switch (proto.option) {
                     case "optional":
                     case "required":
-                        buffer.writeBytes(Protobuf.encodeTag(proto.type, proto.tag));
-                        Protobuf.encodeProp(msg[name], proto.type, protos, buffer);
+                        buffer.writeBytes(this.encodeTag(proto.type, proto.tag));
+                        this.encodeProp(msg[name], proto.type, protos, buffer);
                         break;
                     case "repeated":
                         if (!!msg[name] && msg[name].length > 0) {
-                            Protobuf.encodeArray(msg[name], proto, protos, buffer);
+                            this.encodeArray(msg[name], proto, protos, buffer);
                         }
                         break;
                 }
@@ -62,19 +62,19 @@ export class Protobuf {
         let msg: any = {};
 
         while (buffer.bytesAvailable) {
-            let head: any = Protobuf.getHead(buffer);
+            let head: any = this.getHead(buffer);
             let name: string = protos.__tags[head.tag];
 
             switch (protos[name].option) {
                 case "optional":
                 case "required":
-                    msg[name] = Protobuf.decodeProp(protos[name].type, protos, buffer);
+                    msg[name] = this.decodeProp(protos[name].type, protos, buffer);
                     break;
                 case "repeated":
                     if (!msg[name]) {
                         msg[name] = [];
                     }
-                    Protobuf.decodeArray(msg[name], protos[name].type, protos, buffer);
+                    this.decodeArray(msg[name], protos[name].type, protos, buffer);
                     break;
             }
         }
@@ -83,23 +83,23 @@ export class Protobuf {
     }
 
     static encodeTag(type: number, tag: number): ByteArray {
-        let value: number = Protobuf.TYPES[type] !== undefined ? Protobuf.TYPES[type] : 2;
+        let value: number = this.TYPES[type] !== undefined ? this.TYPES[type] : 2;
 
-        return Protobuf.encodeUInt32((tag << 3) | value);
+        return this.encodeUInt32((tag << 3) | value);
     }
     static getHead(buffer: ByteArray): any {
-        let tag: number = Protobuf.decodeUInt32(buffer);
+        let tag: number = this.decodeUInt32(buffer);
 
         return { type: tag & 0x7, tag: tag >> 3 };
     }
     static encodeProp(value: any, type: string, protos: any, buffer: ByteArray): void {
         switch (type) {
             case "uInt32":
-                buffer.writeBytes(Protobuf.encodeUInt32(value));
+                buffer.writeBytes(this.encodeUInt32(value));
                 break;
             case "int32":
             case "sInt32":
-                buffer.writeBytes(Protobuf.encodeSInt32(value));
+                buffer.writeBytes(this.encodeSInt32(value));
                 break;
             case "float":
                 // Float32Array
@@ -116,20 +116,20 @@ export class Protobuf {
                 break;
             case "string":
                 //Encode length
-                const valueByteLen = Protobuf.byteLength(value);
+                const valueByteLen = this.byteLength(value);
                 //Write String
-                buffer.writeBytes(Protobuf.encodeUInt32(valueByteLen));
+                buffer.writeBytes(this.encodeUInt32(valueByteLen));
                 buffer.writeUTFBytes(value);
                 break;
             case 'bool':
                 const intValue = value ? 1 : 0;
-                buffer.writeBytes(Protobuf.encodeUInt32(intValue));
+                buffer.writeBytes(this.encodeUInt32(intValue));
                 break;
             default:
-                let proto: any = protos.__messages[type] || Protobuf._clients["message " + type];
+                let proto: any = protos.__messages[type] || this._clients["message " + type];
                 if (!!proto) {
-                    let buf: ByteArray = Protobuf.encodeProtos(proto, value);
-                    buffer.writeBytes(Protobuf.encodeUInt32(buf.length));
+                    let buf: ByteArray = this.encodeProtos(proto, value);
+                    buffer.writeBytes(this.encodeUInt32(buf.length));
                     buffer.writeBytes(buf);
                 }
                 break;
@@ -139,15 +139,15 @@ export class Protobuf {
     static decodeProp(type: string, protos: any, buffer: ByteArray): any {
         switch (type) {
             case "uInt32":
-                return Protobuf.decodeUInt32(buffer);
+                return this.decodeUInt32(buffer);
             case "int32":
             case "sInt32":
-                return Protobuf.decodeSInt32(buffer);
+                return this.decodeSInt32(buffer);
             case "float":
                 let floats: ByteArray = new ByteArray();
                 buffer.readBytes(floats, 0, 4);
                 floats.endian = Endian.LITTLE_ENDIAN;
-                let float: number = buffer.readFloat();
+                // let float: number = buffer.readFloat();
                 return floats.readFloat();
             case "double":
                 let doubles: ByteArray = new ByteArray();
@@ -155,16 +155,16 @@ export class Protobuf {
                 doubles.endian = Endian.LITTLE_ENDIAN;
                 return doubles.readDouble();
             case "string":
-                let length: number = Protobuf.decodeUInt32(buffer);
+                let length: number = this.decodeUInt32(buffer);
                 return buffer.readUTFBytes(length);
             case 'bool':
-                const value = Protobuf.decodeUInt32(buffer);
+                const value = this.decodeUInt32(buffer);
                 const boolValue = value ? true : false;
                 return boolValue;
             default:
-                let proto: any = protos && (protos.__messages[type] || Protobuf._servers["message " + type]);
-                if (proto) {
-                    let len: number = Protobuf.decodeUInt32(buffer);
+                let proto: any = protos && (protos.__messages[type] || this._servers["message " + type]);
+                if (!!proto) {
+                    let len: number = this.decodeUInt32(buffer);
                     let buf: ByteArray;
                     if (len) {
                         buf = new ByteArray();
@@ -190,28 +190,32 @@ export class Protobuf {
         );
     }
     static encodeArray(array: Array<any>, proto: any, protos: any, buffer: ByteArray): void {
-        let isSimpleType = Protobuf.isSimpleType;
+        let isSimpleType = this.isSimpleType;
+        let encodeTag = this.encodeTag;
+        let encodeUInt32 = this.encodeUInt32;
         if (isSimpleType(proto.type)) {
-            buffer.writeBytes(Protobuf.encodeTag(proto.type, proto.tag));
-            buffer.writeBytes(Protobuf.encodeUInt32(array.length));
-            let encodeProp = Protobuf.encodeProp;
+            buffer.writeBytes(encodeTag(proto.type, proto.tag));
+            buffer.writeBytes(encodeUInt32(array.length));
+            let encodeProp = this.encodeProp;
             for (let i: number = 0; i < array.length; i++) {
                 encodeProp(array[i], proto.type, protos, buffer);
             }
         } else {
-            let encodeTag = Protobuf.encodeTag;
+            let encodeTag = this.encodeTag;
+            let encodeProp = this.encodeProp;
             for (let j: number = 0; j < array.length; j++) {
                 buffer.writeBytes(encodeTag(proto.type, proto.tag));
-                Protobuf.encodeProp(array[j], proto.type, protos, buffer);
+                encodeProp(array[j], proto.type, protos, buffer);
             }
         }
     }
     static decodeArray(array: Array<any>, type: string, protos: any, buffer: ByteArray): void {
-        let isSimpleType = Protobuf.isSimpleType;
-        let decodeProp = Protobuf.decodeProp;
+        let isSimpleType = this.isSimpleType;
+        let decodeProp = this.decodeProp;
+        let decodeUInt32 = this.decodeUInt32;
 
         if (isSimpleType(type)) {
-            let length: number = Protobuf.decodeUInt32(buffer);
+            let length: number = decodeUInt32(buffer);
             for (let i: number = 0; i < length; i++) {
                 array.push(decodeProp(type, protos, buffer));
             }
@@ -252,10 +256,10 @@ export class Protobuf {
     static encodeSInt32(n: number): ByteArray {
         n = n < 0 ? Math.abs(n) * 2 - 1 : n * 2;
 
-        return Protobuf.encodeUInt32(n);
+        return this.encodeUInt32(n);
     }
     static decodeSInt32(buffer: ByteArray): number {
-        let n: number = Protobuf.decodeUInt32(buffer);
+        let n: number = this.decodeUInt32(buffer);
 
         let flag: number = n % 2 === 1 ? -1 : 1;
 
@@ -272,7 +276,7 @@ export class Protobuf {
 
         for (var i = 0; i < str.length; i++) {
             var code = str.charCodeAt(i);
-            length += Protobuf.codeLength(code);
+            length += this.codeLength(code);
         }
 
         return length;

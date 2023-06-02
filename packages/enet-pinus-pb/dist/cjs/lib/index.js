@@ -551,20 +551,20 @@ var Protobuf = (function () {
     function Protobuf() {
     }
     Protobuf.init = function (protos) {
-        Protobuf._clients = (protos && protos.client) || {};
-        Protobuf._servers = (protos && protos.server) || {};
+        this._clients = (protos && protos.client) || {};
+        this._servers = (protos && protos.server) || {};
     };
     Protobuf.encode = function (route, msg) {
-        var protos = Protobuf._clients[route];
+        var protos = this._clients[route];
         if (!protos)
             return null;
-        return Protobuf.encodeProtos(protos, msg);
+        return this.encodeProtos(protos, msg);
     };
     Protobuf.decode = function (route, buffer) {
-        var protos = Protobuf._servers[route];
+        var protos = this._servers[route];
         if (!protos)
             return null;
-        return Protobuf.decodeProtos(protos, buffer);
+        return this.decodeProtos(protos, buffer);
     };
     Protobuf.encodeProtos = function (protos, msg) {
         var buffer = new ByteArray();
@@ -574,12 +574,12 @@ var Protobuf = (function () {
                 switch (proto.option) {
                     case "optional":
                     case "required":
-                        buffer.writeBytes(Protobuf.encodeTag(proto.type, proto.tag));
-                        Protobuf.encodeProp(msg[name_1], proto.type, protos, buffer);
+                        buffer.writeBytes(this.encodeTag(proto.type, proto.tag));
+                        this.encodeProp(msg[name_1], proto.type, protos, buffer);
                         break;
                     case "repeated":
                         if (!!msg[name_1] && msg[name_1].length > 0) {
-                            Protobuf.encodeArray(msg[name_1], proto, protos, buffer);
+                            this.encodeArray(msg[name_1], proto, protos, buffer);
                         }
                         break;
                 }
@@ -590,39 +590,39 @@ var Protobuf = (function () {
     Protobuf.decodeProtos = function (protos, buffer) {
         var msg = {};
         while (buffer.bytesAvailable) {
-            var head = Protobuf.getHead(buffer);
+            var head = this.getHead(buffer);
             var name_2 = protos.__tags[head.tag];
             switch (protos[name_2].option) {
                 case "optional":
                 case "required":
-                    msg[name_2] = Protobuf.decodeProp(protos[name_2].type, protos, buffer);
+                    msg[name_2] = this.decodeProp(protos[name_2].type, protos, buffer);
                     break;
                 case "repeated":
                     if (!msg[name_2]) {
                         msg[name_2] = [];
                     }
-                    Protobuf.decodeArray(msg[name_2], protos[name_2].type, protos, buffer);
+                    this.decodeArray(msg[name_2], protos[name_2].type, protos, buffer);
                     break;
             }
         }
         return msg;
     };
     Protobuf.encodeTag = function (type, tag) {
-        var value = Protobuf.TYPES[type] !== undefined ? Protobuf.TYPES[type] : 2;
-        return Protobuf.encodeUInt32((tag << 3) | value);
+        var value = this.TYPES[type] !== undefined ? this.TYPES[type] : 2;
+        return this.encodeUInt32((tag << 3) | value);
     };
     Protobuf.getHead = function (buffer) {
-        var tag = Protobuf.decodeUInt32(buffer);
+        var tag = this.decodeUInt32(buffer);
         return { type: tag & 0x7, tag: tag >> 3 };
     };
     Protobuf.encodeProp = function (value, type, protos, buffer) {
         switch (type) {
             case "uInt32":
-                buffer.writeBytes(Protobuf.encodeUInt32(value));
+                buffer.writeBytes(this.encodeUInt32(value));
                 break;
             case "int32":
             case "sInt32":
-                buffer.writeBytes(Protobuf.encodeSInt32(value));
+                buffer.writeBytes(this.encodeSInt32(value));
                 break;
             case "float":
                 var floats = new ByteArray();
@@ -637,19 +637,19 @@ var Protobuf = (function () {
                 buffer.writeBytes(doubles);
                 break;
             case "string":
-                var valueByteLen = Protobuf.byteLength(value);
-                buffer.writeBytes(Protobuf.encodeUInt32(valueByteLen));
+                var valueByteLen = this.byteLength(value);
+                buffer.writeBytes(this.encodeUInt32(valueByteLen));
                 buffer.writeUTFBytes(value);
                 break;
             case 'bool':
                 var intValue = value ? 1 : 0;
-                buffer.writeBytes(Protobuf.encodeUInt32(intValue));
+                buffer.writeBytes(this.encodeUInt32(intValue));
                 break;
             default:
-                var proto = protos.__messages[type] || Protobuf._clients["message " + type];
+                var proto = protos.__messages[type] || this._clients["message " + type];
                 if (!!proto) {
-                    var buf = Protobuf.encodeProtos(proto, value);
-                    buffer.writeBytes(Protobuf.encodeUInt32(buf.length));
+                    var buf = this.encodeProtos(proto, value);
+                    buffer.writeBytes(this.encodeUInt32(buf.length));
                     buffer.writeBytes(buf);
                 }
                 break;
@@ -658,15 +658,14 @@ var Protobuf = (function () {
     Protobuf.decodeProp = function (type, protos, buffer) {
         switch (type) {
             case "uInt32":
-                return Protobuf.decodeUInt32(buffer);
+                return this.decodeUInt32(buffer);
             case "int32":
             case "sInt32":
-                return Protobuf.decodeSInt32(buffer);
+                return this.decodeSInt32(buffer);
             case "float":
                 var floats = new ByteArray();
                 buffer.readBytes(floats, 0, 4);
                 floats.endian = Endian.LITTLE_ENDIAN;
-                var float = buffer.readFloat();
                 return floats.readFloat();
             case "double":
                 var doubles = new ByteArray();
@@ -674,16 +673,16 @@ var Protobuf = (function () {
                 doubles.endian = Endian.LITTLE_ENDIAN;
                 return doubles.readDouble();
             case "string":
-                var length_1 = Protobuf.decodeUInt32(buffer);
+                var length_1 = this.decodeUInt32(buffer);
                 return buffer.readUTFBytes(length_1);
             case 'bool':
-                var value = Protobuf.decodeUInt32(buffer);
+                var value = this.decodeUInt32(buffer);
                 var boolValue = value ? true : false;
                 return boolValue;
             default:
-                var proto = protos && (protos.__messages[type] || Protobuf._servers["message " + type]);
-                if (proto) {
-                    var len = Protobuf.decodeUInt32(buffer);
+                var proto = protos && (protos.__messages[type] || this._servers["message " + type]);
+                if (!!proto) {
+                    var len = this.decodeUInt32(buffer);
                     var buf = void 0;
                     if (len) {
                         buf = new ByteArray();
@@ -705,28 +704,32 @@ var Protobuf = (function () {
             type === "bool");
     };
     Protobuf.encodeArray = function (array, proto, protos, buffer) {
-        var isSimpleType = Protobuf.isSimpleType;
+        var isSimpleType = this.isSimpleType;
+        var encodeTag = this.encodeTag;
+        var encodeUInt32 = this.encodeUInt32;
         if (isSimpleType(proto.type)) {
-            buffer.writeBytes(Protobuf.encodeTag(proto.type, proto.tag));
-            buffer.writeBytes(Protobuf.encodeUInt32(array.length));
-            var encodeProp = Protobuf.encodeProp;
+            buffer.writeBytes(encodeTag(proto.type, proto.tag));
+            buffer.writeBytes(encodeUInt32(array.length));
+            var encodeProp = this.encodeProp;
             for (var i = 0; i < array.length; i++) {
                 encodeProp(array[i], proto.type, protos, buffer);
             }
         }
         else {
-            var encodeTag = Protobuf.encodeTag;
+            var encodeTag_1 = this.encodeTag;
+            var encodeProp = this.encodeProp;
             for (var j = 0; j < array.length; j++) {
-                buffer.writeBytes(encodeTag(proto.type, proto.tag));
-                Protobuf.encodeProp(array[j], proto.type, protos, buffer);
+                buffer.writeBytes(encodeTag_1(proto.type, proto.tag));
+                encodeProp(array[j], proto.type, protos, buffer);
             }
         }
     };
     Protobuf.decodeArray = function (array, type, protos, buffer) {
-        var isSimpleType = Protobuf.isSimpleType;
-        var decodeProp = Protobuf.decodeProp;
+        var isSimpleType = this.isSimpleType;
+        var decodeProp = this.decodeProp;
+        var decodeUInt32 = this.decodeUInt32;
         if (isSimpleType(type)) {
-            var length_2 = Protobuf.decodeUInt32(buffer);
+            var length_2 = decodeUInt32(buffer);
             for (var i = 0; i < length_2; i++) {
                 array.push(decodeProp(type, protos, buffer));
             }
@@ -761,10 +764,10 @@ var Protobuf = (function () {
     };
     Protobuf.encodeSInt32 = function (n) {
         n = n < 0 ? Math.abs(n) * 2 - 1 : n * 2;
-        return Protobuf.encodeUInt32(n);
+        return this.encodeUInt32(n);
     };
     Protobuf.decodeSInt32 = function (buffer) {
-        var n = Protobuf.decodeUInt32(buffer);
+        var n = this.decodeUInt32(buffer);
         var flag = n % 2 === 1 ? -1 : 1;
         n = (((n % 2) + n) / 2) * flag;
         return n;
@@ -776,7 +779,7 @@ var Protobuf = (function () {
         var length = 0;
         for (var i = 0; i < str.length; i++) {
             var code = str.charCodeAt(i);
-            length += Protobuf.codeLength(code);
+            length += this.codeLength(code);
         }
         return length;
     };

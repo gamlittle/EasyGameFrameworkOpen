@@ -45,6 +45,7 @@
   },
   "homepage": "https://github.com/AILHC/EasyGameFrameworkOpen/tree/main/packages/enet-pinus-pb#readme",
   "devDependencies": {
-    "@ailhc/enet": "^1.2.7"
+    "@ailhc/enet": "^1.2.7",
+    "ts-node": "^10.9.1"
   }
 }

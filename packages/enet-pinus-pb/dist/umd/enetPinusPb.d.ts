@@ -835,6 +835,10 @@ declare module 'enetPinusPb' {
 	
 
 }
+declare module 'enetPinusPb' {
+	
+
+}
 
 declare namespace enetPinusPb {
 	type Endian = import('enetPinusPb').Endian;

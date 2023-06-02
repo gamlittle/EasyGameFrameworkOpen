@@ -640,6 +640,10 @@ var enetPinusPb = (function (exports) {
                     buffer.writeBytes(this.encodeUInt32(valueByteLen));
                     buffer.writeUTFBytes(value);
                     break;
+                case 'bool':
+                    var intValue = value ? 1 : 0;
+                    buffer.writeBytes(this.encodeUInt32(intValue));
+                    break;
                 default:
                     var proto = protos.__messages[type] || this._clients["message " + type];
                     if (!!proto) {
@@ -661,7 +665,6 @@ var enetPinusPb = (function (exports) {
                     var floats = new ByteArray();
                     buffer.readBytes(floats, 0, 4);
                     floats.endian = Endian.LITTLE_ENDIAN;
-                    var float = buffer.readFloat();
                     return floats.readFloat();
                 case "double":
                     var doubles = new ByteArray();
@@ -671,9 +674,13 @@ var enetPinusPb = (function (exports) {
                 case "string":
                     var length_1 = this.decodeUInt32(buffer);
                     return buffer.readUTFBytes(length_1);
+                case 'bool':
+                    var value = this.decodeUInt32(buffer);
+                    var boolValue = value ? true : false;
+                    return boolValue;
                 default:
                     var proto = protos && (protos.__messages[type] || this._servers["message " + type]);
-                    if (proto) {
+                    if (!!proto) {
                         var len = this.decodeUInt32(buffer);
                         var buf = void 0;
                         if (len) {
@@ -692,31 +699,36 @@ var enetPinusPb = (function (exports) {
                 type === "uInt64" ||
                 type === "sInt64" ||
                 type === "float" ||
-                type === "double");
+                type === "double" ||
+                type === "bool");
         };
         Protobuf.encodeArray = function (array, proto, protos, buffer) {
             var isSimpleType = this.isSimpleType;
+            var encodeTag = this.encodeTag;
+            var encodeUInt32 = this.encodeUInt32;
             if (isSimpleType(proto.type)) {
-                buffer.writeBytes(this.encodeTag(proto.type, proto.tag));
-                buffer.writeBytes(this.encodeUInt32(array.length));
+                buffer.writeBytes(encodeTag(proto.type, proto.tag));
+                buffer.writeBytes(encodeUInt32(array.length));
                 var encodeProp = this.encodeProp;
                 for (var i = 0; i < array.length; i++) {
                     encodeProp(array[i], proto.type, protos, buffer);
                 }
             }
             else {
-                var encodeTag = this.encodeTag;
+                var encodeTag_1 = this.encodeTag;
+                var encodeProp = this.encodeProp;
                 for (var j = 0; j < array.length; j++) {
-                    buffer.writeBytes(encodeTag(proto.type, proto.tag));
-                    this.encodeProp(array[j], proto.type, protos, buffer);
+                    buffer.writeBytes(encodeTag_1(proto.type, proto.tag));
+                    encodeProp(array[j], proto.type, protos, buffer);
                 }
             }
         };
         Protobuf.decodeArray = function (array, type, protos, buffer) {
             var isSimpleType = this.isSimpleType;
             var decodeProp = this.decodeProp;
+            var decodeUInt32 = this.decodeUInt32;
             if (isSimpleType(type)) {
-                var length_2 = this.decodeUInt32(buffer);
+                var length_2 = decodeUInt32(buffer);
                 for (var i = 0; i < length_2; i++) {
                     array.push(decodeProp(type, protos, buffer));
                 }
@@ -761,7 +773,7 @@ var enetPinusPb = (function (exports) {
         };
         Protobuf.byteLength = function (str) {
             if (typeof str !== "string") {
-                return -1;
+                return 0;
             }
             var length = 0;
             for (var i = 0; i < str.length; i++) {
@@ -788,7 +800,8 @@ var enetPinusPb = (function (exports) {
             double: 1,
             string: 2,
             message: 2,
-            float: 5
+            float: 5,
+            bool: 0
         };
         Protobuf._clients = {};
         Protobuf._servers = {};
@@ -1086,8 +1099,6 @@ var enetPinusPb = (function (exports) {
     exports.Protobuf = Protobuf;
     exports.Protocol = Protocol;
     exports.Routedic = Routedic;
-
-    Object.defineProperty(exports, '__esModule', { value: true });
 
     return exports;
 
